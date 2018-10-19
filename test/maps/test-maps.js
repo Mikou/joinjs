@@ -177,7 +177,7 @@ let testMaps = [
     },
     {
         mapId: 'transformMap',
-        idProperty: [{ name: 'myId', column: 'my_id' }],
+        idProperty: ['myId'],
         properties: [
             'myFirstKey',
             { name: 'mySecondKey', column: 'my_second_key' }

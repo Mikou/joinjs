@@ -112,7 +112,7 @@ function injectResultInObject(result, mappedObject, maps, mapId, columnPrefix = 
     let idProperty = getIdProperty(resultMap);
 
     _.each(idProperty, field => {
-        if (idProperty.transform && resultMap.transform && typeof resultMap.transform === 'function') {
+        if (field.transform && resultMap.transform && typeof resultMap.transform === 'function') {
             _.each(result, (v, k) => {
                 const transformedKey = resultMap.transform(k);
                 if (field.name === transformedKey) {
