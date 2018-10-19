@@ -638,4 +638,23 @@ describe('Mapper', () => {
 
         expect(mappedResult).to.deep.equal(expectedResult);
     });
+    it('should transform keys', () => {
+        let resultSet = [{ my_id: 0, my_first_key: 1, my_second_key: 2 }];
+
+        let expectedResult = [{ myId: 0, myFirstKey: 1, mySecondKey: 2 }];
+
+        var mappedResult = joinjs.map(resultSet, testMaps, 'transformMap');
+
+        expect(mappedResult).to.deep.equal(expectedResult);
+    });
+
+    it('should extend the object', () => {
+        let resultSet = [{ id: 0, firstname: 'John', lastname: 'Lennon'}];
+
+        let expectedResult = [{ id: 0, firstname: 'John', lastname: 'Lennon', fullname: 'John Lennon' }];
+
+        var mappedResult = joinjs.map(resultSet, testMaps, 'extendMap');
+
+        expect(mappedResult).to.deep.equal(expectedResult);
+    });
 });

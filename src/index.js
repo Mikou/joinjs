@@ -112,6 +112,16 @@ function injectResultInObject(result, mappedObject, maps, mapId, columnPrefix = 
     let idProperty = getIdProperty(resultMap);
 
     _.each(idProperty, field => {
+        if (idProperty.transform && resultMap.transform && typeof resultMap.transform === 'function') {
+            _.each(result, (v, k) => {
+                const transformedKey = resultMap.transform(k);
+                if (field.name === transformedKey) {
+                    delete result[k];
+                    result[transformedKey] = v;
+                }
+            });
+        }
+
         if (!mappedObject[field.name]) {
             mappedObject[field.name] = result[columnPrefix + field.column];
         }
@@ -123,7 +133,21 @@ function injectResultInObject(result, mappedObject, maps, mapId, columnPrefix = 
         // If property is a string, convert it to an object
         if (typeof property === 'string') {
             // eslint-disable-next-line
-            property = {name: property, column: property};
+            property = {name: property, column: property, transform: true};
+        }
+
+        // unless explicitely specified, don't transform name for properties with column specification
+        property.tranform = property.transform || false;
+
+        // eventually transform result keys matching properties
+        if (property.transform && resultMap.transform && typeof resultMap.transform === 'function') {
+            _.each(result, (v, k) => {
+                const transformedKey = resultMap.transform(k);
+                if (property.name === transformedKey) {
+                    delete result[k];
+                    result[transformedKey] = v;
+                }
+            });
         }
 
         // Copy only if property does not exist already
@@ -135,6 +159,11 @@ function injectResultInObject(result, mappedObject, maps, mapId, columnPrefix = 
             mappedObject[property.name] = result[columnPrefix + column];
         }
     });
+
+    // extend the mappedObject
+    if (resultMap.extend && typeof resultMap.extend === 'function') {
+        Object.assign(mappedObject, resultMap.extend(mappedObject));
+    }
 
     // Copy associations
     _.each(resultMap.associations, (association) => {
@@ -185,7 +214,7 @@ function createMappedObject(resultMap) {
 function getIdProperty(resultMap) {
 
     if (!resultMap.idProperty) {
-        return [{name: 'id', column: 'id'}];
+        return [{name: 'id', column: 'id', transform: false}];
     }
 
     let idProperties = resultMap.idProperty;
@@ -198,7 +227,10 @@ function getIdProperty(resultMap) {
 
         // If property is a string, convert it to an object
         if (_.isString(idProperty)) {
-            return {name: idProperty, column: idProperty};
+            return {name: idProperty, column: idProperty, transform: true};
+        } else {
+            // unless explicitely specified, don't transform name for properties with column specification
+            idProperty.transform = idProperty.transform || false;
         }
 
         // The default for column name is property name

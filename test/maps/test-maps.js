@@ -1,3 +1,4 @@
+import _ from 'lodash';
 let testMaps = [
     {
         mapId: 'noIdProperty',
@@ -173,6 +174,23 @@ let testMaps = [
     {
         mapId: 'pMap',
         properties: ['prop']
+    },
+    {
+        mapId: 'transformMap',
+        idProperty: [{ name: 'myId', column: 'my_id' }],
+        properties: [
+            'myFirstKey',
+            { name: 'mySecondKey', column: 'my_second_key' }
+        ],
+        transform: _.camelCase
+    },
+    {
+        mapId: 'extendMap',
+        properties: ['firstname', 'lastname'],
+        extend: properties =>
+            Object.assign(properties, {
+                fullname: properties.firstname + ' ' + properties.lastname
+            })
     }
 ];
 
