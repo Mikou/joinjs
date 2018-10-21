@@ -73,14 +73,18 @@ function injectResultInCollection(result, mappedCollection, maps, mapId, columnP
 
     // Check if the object is already in mappedCollection
     let resultMap = _.find(maps, ['mapId', mapId]);
-    let idProperty = getIdProperty(resultMap);
-    let predicate = _.transform(idProperty, (accumulator, field) => {
-        accumulator[field.name] = result[columnPrefix + field.column];
+
+    let idProperties = getIdProperties(resultMap);
+    let predicate = _.transform(idProperties, (accumulator, idProperty) => {
+        if (idProperty.transform && resultMap.transform && typeof resultMap.transform === 'function') {
+            transformResultField(resultMap, result, columnPrefix, idProperty);
+        }
+        return accumulator[idProperty.name] = result[columnPrefix + idProperty.column];
     }, {});
     let mappedObject = _.find(mappedCollection, predicate);
 
     // Inject only if the value of idProperty is not null (ignore joins to null records)
-    let isIdPropertyNotNull = _.every(idProperty, field => !_.isNull(result[columnPrefix + field.column]));
+    let isIdPropertyNotNull = _.every(idProperties, idProperty => !_.isNull(result[columnPrefix + idProperty.column]));
 
     if (isIdPropertyNotNull) {
         // Create mappedObject if it does not exist in mappedCollection
@@ -109,19 +113,9 @@ function injectResultInObject(result, mappedObject, maps, mapId, columnPrefix = 
     let resultMap = _.find(maps, ['mapId', mapId]);
 
     // Copy id property
-    let idProperty = getIdProperty(resultMap);
+    let idProperty = getIdProperties(resultMap);
 
     _.each(idProperty, field => {
-        if (field.transform && resultMap.transform && typeof resultMap.transform === 'function') {
-            _.each(result, (v, k) => {
-                const transformedKey = resultMap.transform(k);
-                if (field.name === transformedKey) {
-                    delete result[k];
-                    result[transformedKey] = v;
-                }
-            });
-        }
-
         if (!mappedObject[field.name]) {
             mappedObject[field.name] = result[columnPrefix + field.column];
         }
@@ -137,17 +131,11 @@ function injectResultInObject(result, mappedObject, maps, mapId, columnPrefix = 
         }
 
         // unless explicitely specified, don't transform name for properties with column specification
-        property.tranform = property.transform || false;
+        property.transform = property.transform || false;
 
         // eventually transform result keys matching properties
         if (property.transform && resultMap.transform && typeof resultMap.transform === 'function') {
-            _.each(result, (v, k) => {
-                const transformedKey = resultMap.transform(k);
-                if (property.name === transformedKey) {
-                    delete result[k];
-                    result[transformedKey] = v;
-                }
-            });
+            transformResultField(resultMap, result, columnPrefix, property);
         }
 
         // Copy only if property does not exist already
@@ -155,7 +143,6 @@ function injectResultInObject(result, mappedObject, maps, mapId, columnPrefix = 
 
             // The default for column name is property name
             let column = (property.column) ? property.column : property.name;
-
             mappedObject[property.name] = result[columnPrefix + column];
         }
     });
@@ -172,7 +159,7 @@ function injectResultInObject(result, mappedObject, maps, mapId, columnPrefix = 
 
         if (!associatedObject) {
             let associatedResultMap = _.find(maps, ['mapId', association.mapId]);
-            let associatedObjectIdProperty = getIdProperty(associatedResultMap);
+            let associatedObjectIdProperty = getIdProperties(associatedResultMap);
 
             mappedObject[association.name] = null;
 
@@ -211,7 +198,7 @@ function createMappedObject(resultMap) {
     return (resultMap.createNew) ? resultMap.createNew() : {};
 }
 
-function getIdProperty(resultMap) {
+function getIdProperties(resultMap) {
 
     if (!resultMap.idProperty) {
         return [{name: 'id', column: 'id', transform: false}];
@@ -239,6 +226,19 @@ function getIdProperty(resultMap) {
         }
 
         return idProperty;
+    });
+}
+
+function transformResultField(resultMap, result, columnPrefix, property) {
+    _.each(result, (value, field) => {
+        const rawField = columnPrefix ? field.replace(new RegExp(`^${columnPrefix}`), '') : field;
+        const transformedField = resultMap.transform(rawField);
+
+        if (property.column === rawField || property.column === transformedField) {
+            delete result[field];
+            result[columnPrefix + transformedField] = value;
+        }
+
     });
 }
 

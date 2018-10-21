@@ -638,7 +638,7 @@ describe('Mapper', () => {
 
         expect(mappedResult).to.deep.equal(expectedResult);
     });
-    it('should transform keys', () => {
+    it('should transform result fields', () => {
         let resultSet = [{ my_id: 0, my_first_key: 1, my_second_key: 2 }];
 
         let expectedResult = [{ myId: 0, myFirstKey: 1, mySecondKey: 2 }];
@@ -647,7 +647,25 @@ describe('Mapper', () => {
 
         expect(mappedResult).to.deep.equal(expectedResult);
     });
+    it('should handle optional transform options', () => {
+        let resultSet = [{
+            prefix_my_id: 0,
+            prefix_my_first_field: 'transformOption1',
+            prefix_my_second_field: 'transformOption2',
+            prefix_my_third_field: 'transformOption3',
+        }];
 
+        let expectedResult = [{
+            id: 0,
+            myFirstField: 'transformOption1',
+            mySecondField: 'transformOption2',
+            myThirdField: 'transformOption3'
+        }];
+
+        var mappedResult = joinjs.map(resultSet, testMaps, 'transformOptionMap');
+
+        expect(mappedResult).to.deep.equal(expectedResult);
+    });
     it('should extend the object', () => {
         let resultSet = [{ id: 0, firstname: 'John', lastname: 'Lennon'}];
 
@@ -656,5 +674,22 @@ describe('Mapper', () => {
         var mappedResult = joinjs.map(resultSet, testMaps, 'extendMap');
 
         expect(mappedResult).to.deep.equal(expectedResult);
+    });
+    it('should properly map to collection even if propertyId has been transformed', () => {
+        let resultSet = [{ id: 0, my_first_key: 1, collection_my_id: 0, collection_my_first_key: 1, collection_my_second_key: 2 }];
+
+        let expectedResult = [{
+            id: 0,
+            myFirstKey: 1,
+            collection: [{
+                myId: 0,
+                myFirstKey: 1,
+                mySecondKey: 2
+            }]
+        }];
+
+        var mappedResult = joinjs.map(resultSet, testMaps, 'transformCollectionMap');
+        expect(mappedResult).to.deep.equal(expectedResult);
+
     });
 });

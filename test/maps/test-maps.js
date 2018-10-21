@@ -180,9 +180,23 @@ let testMaps = [
         idProperty: ['myId'],
         properties: [
             'myFirstKey',
-            { name: 'mySecondKey', column: 'my_second_key' }
+            'mySecondKey'
         ],
         transform: _.camelCase
+    },
+    {
+        mapId: 'transformOptionMap',
+        idProperty: [{ name: 'id', column: 'my_id', transform: true }],
+        properties: [
+            // transform true = the underlying result field matching "column" is transformed
+            { name: 'myFirstField', column: 'my_first_field', transform: true },
+            // transform false = the underlying result field matching "column" is not transformed
+            { name: 'mySecondField', column: 'prefix_my_second_field', transform: false },
+            // transform = false by default
+            { name: 'myThirdField', column: 'prefix_my_third_field' } // transform = false
+        ],
+        // removes prefix_ on all result fields (unless transform = false)
+        transform: (fieldname) => fieldname.replace(new RegExp('^prefix_'), '')
     },
     {
         mapId: 'extendMap',
@@ -191,6 +205,14 @@ let testMaps = [
             Object.assign(properties, {
                 fullname: properties.firstname + ' ' + properties.lastname
             })
+    },
+    {
+        mapId: 'transformCollectionMap',
+        properties: ['myFirstKey'],
+        collections: [
+            { name: 'collection', mapId: 'transformMap', columnPrefix: 'collection_' }
+        ],
+        transform: _.camelCase
     }
 ];
 
